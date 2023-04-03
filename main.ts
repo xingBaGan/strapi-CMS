@@ -1,4 +1,5 @@
 import { App, Editor, MarkdownView, Modal, Notice, Plugin, PluginSettingTab, Setting } from 'obsidian';
+import { ExampleView, VIEW_TYPE_EXAMPLE } from "./src/view";
 
 // Remember to rename these classes and interfaces!
 
@@ -15,11 +16,13 @@ export default class MyPlugin extends Plugin {
 
 	async onload() {
 		await this.loadSettings();
-
+		// register the view and extensions
+		this.registerExtensions(["mdx", "svx", "rmd"], "markdown");
 		// This creates an icon in the left ribbon.
 		const ribbonIconEl = this.addRibbonIcon('dice', 'Sample Plugin', (evt: MouseEvent) => {
 			// Called when the user clicks the icon.
-			new Notice('This is a notice!');
+			new Notice('Hello, you! syncing, hot reloading');
+			this.activateView();
 		});
 		// Perform additional things with the ribbon
 		ribbonIconEl.addClass('my-plugin-ribbon-class');
@@ -76,10 +79,16 @@ export default class MyPlugin extends Plugin {
 
 		// When registering intervals, this function will automatically clear the interval when the plugin is disabled.
 		this.registerInterval(window.setInterval(() => console.log('setInterval'), 5 * 60 * 1000));
+
+
+		this.registerView(
+			VIEW_TYPE_EXAMPLE,
+			(leaf) => new ExampleView(leaf)
+		);
 	}
 
 	onunload() {
-
+		this.app.workspace.detachLeavesOfType(VIEW_TYPE_EXAMPLE);
 	}
 
 	async loadSettings() {
@@ -89,7 +98,23 @@ export default class MyPlugin extends Plugin {
 	async saveSettings() {
 		await this.saveData(this.settings);
 	}
+
+	async activateView() {
+		this.app.workspace.detachLeavesOfType(VIEW_TYPE_EXAMPLE);
+
+		await this.app.workspace.getRightLeaf(false).setViewState({
+			type: VIEW_TYPE_EXAMPLE,
+			active: true,
+		});
+
+		this.app.workspace.revealLeaf(
+			this.app.workspace.getLeavesOfType(VIEW_TYPE_EXAMPLE)[0]
+		);
+	}
 }
+
+
+
 
 class SampleModal extends Modal {
 	constructor(app: App) {
@@ -97,12 +122,12 @@ class SampleModal extends Modal {
 	}
 
 	onOpen() {
-		const {contentEl} = this;
+		const { contentEl } = this;
 		contentEl.setText('Woah!');
 	}
 
 	onClose() {
-		const {contentEl} = this;
+		const { contentEl } = this;
 		contentEl.empty();
 	}
 }
@@ -116,11 +141,11 @@ class SampleSettingTab extends PluginSettingTab {
 	}
 
 	display(): void {
-		const {containerEl} = this;
+		const { containerEl } = this;
 
 		containerEl.empty();
 
-		containerEl.createEl('h2', {text: 'Settings for my awesome plugin.'});
+		containerEl.createEl('h2', { text: 'Settings for my awesome plugin.' });
 
 		new Setting(containerEl)
 			.setName('Setting #1')
